@@ -1,6 +1,6 @@
 #!/bin/sh
 # Layers CLI installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/layers/cli/main/install.sh | sh
+# Usage: curl -fsSL https://layers.com/install.sh | sh
 
 set -e
 
@@ -41,28 +41,28 @@ DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST}/${ARCHIVE}"
 CHECKSUMS_URL="https://github.com/${REPO}/releases/download/${LATEST}/checksums.txt"
 
 # Download binary and checksums
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+WORK_DIR=$(mktemp -d)
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 echo "Downloading ${ARCHIVE}..."
-curl -fsSL -o "${TMPDIR}/${ARCHIVE}" "$DOWNLOAD_URL"
-curl -fsSL -o "${TMPDIR}/checksums.txt" "$CHECKSUMS_URL"
+curl -fsSL -o "${WORK_DIR}/${ARCHIVE}" "$DOWNLOAD_URL"
+curl -fsSL -o "${WORK_DIR}/checksums.txt" "$CHECKSUMS_URL"
 
-# Verify checksum
+# Verify checksum (mandatory — refuse to install without verification)
 echo "Verifying checksum..."
-EXPECTED=$(grep "${ARCHIVE}" "${TMPDIR}/checksums.txt" | awk '{print $1}')
+EXPECTED=$(grep -F "${ARCHIVE}" "${WORK_DIR}/checksums.txt" | awk '{print $1}')
 if [ -z "$EXPECTED" ]; then
   echo "Checksum not found for ${ARCHIVE}"
   exit 1
 fi
 
 if command -v sha256sum > /dev/null 2>&1; then
-  ACTUAL=$(sha256sum "${TMPDIR}/${ARCHIVE}" | awk '{print $1}')
+  ACTUAL=$(sha256sum "${WORK_DIR}/${ARCHIVE}" | awk '{print $1}')
 elif command -v shasum > /dev/null 2>&1; then
-  ACTUAL=$(shasum -a 256 "${TMPDIR}/${ARCHIVE}" | awk '{print $1}')
+  ACTUAL=$(shasum -a 256 "${WORK_DIR}/${ARCHIVE}" | awk '{print $1}')
 else
-  echo "Warning: sha256sum not found, skipping checksum verification"
-  ACTUAL="$EXPECTED"
+  echo "Error: No SHA256 tool found (need sha256sum or shasum). Cannot verify binary integrity."
+  exit 1
 fi
 
 if [ "$EXPECTED" != "$ACTUAL" ]; then
@@ -74,10 +74,10 @@ fi
 
 # Extract and install
 echo "Installing to ${INSTALL_DIR}..."
-tar -xzf "${TMPDIR}/${ARCHIVE}" -C "$TMPDIR"
+tar -xzf "${WORK_DIR}/${ARCHIVE}" -C "$WORK_DIR"
 
 # Find the binary (GoReleaser may wrap in subdirectory)
-BINARY_PATH=$(find "$TMPDIR" -name "$BINARY" -type f | head -1)
+BINARY_PATH=$(find "$WORK_DIR" -name "$BINARY" -type f | head -1)
 if [ -z "$BINARY_PATH" ]; then
   echo "Binary not found in archive"
   exit 1
