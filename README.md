@@ -1,42 +1,35 @@
 
 # Layers CLI
 
-Layers CLI signs you in and hands your coding agent research tools for TikTok
-and Instagram, scoped to the repository you run it in. Search a niche, find the
-posts that beat their own account's normal, read the creative anatomy of the
-winners, register what you publish, then read the outcome a day later.
-
-Research runs on public data, so there is no social account to connect. One
-command does the whole setup, and no key is written to any file.
+Layers CLI signs you in and binds this repository to the Layers MCP, so your
+coding agent can call Layers growth, content, paid-media and managed
+distribution tools by name. One command does the whole setup, and no credential
+is written into the repository.
 
 ```bash
 $ cd your-app
 $ layers setup
 
-  ✓ Growth is set up for this repository.
+  ✓ Layers MCP is configured and ready for this repository.
 
-    Account   you@example.com
-    Balance   0 credits
-    Plan      free
+    Organization  org_…
+    Project       prj_…
+    Endpoint      https://mcp.layers.com/mcp
 
-    Wrote
+    Repository files
+      .layers/project.json
       .mcp.json
-      .claude/skills/growth/SKILL.md
-    .mcp.json names the local command `layers mcp` and nothing else; no key was written anywhere.
-
-  Start your trial
-    3-day free Pro trial: $0 today, card required, 100 credits, then $49/mo unless cancelled.
-
-  https://growth.layers.com/v1/checkout?item=trial&acct=…
-
-  Your coding agent can call the growth tools RIGHT NOW from this shell.
-    layers growth <tool> '{"query":"dream meaning"}'
+      .agents/skills/layers/SKILL.md
+      .claude/skills/layers -> ../../.agents/skills/layers
+    These files are non-secret. The MCP client spawns `layers mcp`; the session stays in the credential store.
+    Layers CLI     on_path
+    Codex          registered
+    Claude Code    project_config_pending_approval
+    Readiness      ready
 ```
 
-Then ask your agent to grow the app. It reads the codebase it already knows,
-builds the brief itself, and runs the research loop: post and hashtag search,
-competitor and adjacent-account mapping, breakout-post deconstruction, and the
-outcome check a day after you publish.
+Then ask your agent to grow the app. It reads the pinned skill pointer, loads
+the server-owned skills for the job at hand, and calls the tools.
 
 ## Install
 
@@ -86,81 +79,86 @@ cd your-app
 layers setup
 
 # 2. Call a tool right now, in this same shell
-layers growth growth_search_posts '{"query":"dream meaning","limit":5}'
+layers call find_growth_opportunities
 
 # 3. Restart your coding agent, or run /mcp, so it loads the tools natively
-
-# 4. Check what you have left whenever you want
-layers account
 ```
 
 Step 2 and step 3 are the same tools over the same sign-in. MCP clients read
-`.mcp.json` at startup, so `layers growth` is how you work in the session where
+`.mcp.json` at startup, so `layers call` is how you work in the session where
 setup just ran.
 
 ## What `layers setup` writes
 
-| File                             | What it is                                                      |
-| -------------------------------- | --------------------------------------------------------------- |
-| `.mcp.json`                      | the `growth` MCP server, merged alongside servers already there |
-| `.claude/skills/growth/SKILL.md` | the research loop your agent follows                            |
+| File                             | What it is                                                       |
+| -------------------------------- | ---------------------------------------------------------------- |
+| `.layers/project.json`           | the public organization and project this repository is bound to  |
+| `.mcp.json`                      | the `layers` MCP server, merged alongside servers already there  |
+| `.agents/skills/layers/SKILL.md` | a thin pointer to the server-owned Layers skills                 |
+| `.claude/skills/layers`          | a relative symlink to that pointer, where symlinks are supported |
 
 The `.mcp.json` entry is the local command and nothing else:
 
 ```json
 {
   "mcpServers": {
-    "growth": { "command": "layers", "args": ["mcp"] }
+    "layers": { "command": "layers", "args": ["mcp"] }
   }
 }
 ```
 
-Pass `--name`, `--description` or `--keywords` and setup also records an app
-brief at `.layers/growth.json` for later tools.
+Setup is idempotent. Re-running it repairs Layers-owned entries, leaves every
+other byte of `.mcp.json` alone, and never creates a second project. It also
+removes the retired `growth` server entry when that entry is exactly the one an
+older `layers setup` wrote, and refuses to touch one that was modified.
 
-## No key on disk
+`.layers/project.json` holds public selectors, not authority. The MCP edge
+revalidates the session and its membership on every call.
+
+## The endpoint, and pointing it somewhere else
+
+`layers mcp` forwards to `https://mcp.layers.com/mcp`. For local development,
+set `LAYERS_MCP_HOST` (or pass `--host` to `layers setup`) to another
+deployment:
+
+```bash
+LAYERS_MCP_HOST=https://localhost:8787 layers setup
+```
+
+`--host` records the choice in the machine's global Layers config, so the
+`layers mcp` the client spawns reaches the same place without an environment
+variable. The endpoint is machine-owned in both cases: nothing in a repository
+can select one, because a repository is shared and a credential destination is
+not. Only the production host, an `https://*.layers.com` host, loopback, and the
+host named in `LAYERS_MCP_HOST` are accepted.
+
+## No credential in the repository
 
 `layers login` stores your session in the operating system keyring: Keychain on
 macOS, Credential Manager on Windows, `gnome-keyring` or `kwallet` on Linux.
+The credential subsystem also maintains its mode-0600 machine record under the
+global Layers config directory for refresh durability. The Layers MCP will not
+accept that record without the matching OS-keyring session unless the operator
+explicitly records `--allow-file-credentials` in the 0600 machine config.
 
-`layers mcp` is the credential's only reader. Your MCP client spawns it, and it
-forwards every JSON-RPC message to `https://growth.layers.com/mcp` with that
-session. The repository holds the command name and nothing else, so `grep -r`
-of your project finds no credential.
+`layers mcp` and `layers call` are the credential's only readers. An MCP client
+spawns the proxy, which forwards JSON-RPC messages with that session. The
+repository holds the command name and the public binding only, so `grep -r` of
+the project finds no credential.
 
-For the rare client you wire by hand and that cannot spawn a local command,
-`layers keys create` mints a long-lived key, prints it exactly once, and writes
-it to no file. Five keys may be active at a time; `layers keys revoke <keyId>`
-ends one.
+There is no API key in MCP setup, and no command that mints one. Partner API
+keys remain available for REST integrations and are issued from the Layers app.
 
 ## Credits
 
-Every `growth_*` result carries what it cost and what is left. `layers account`
-reports the same balance without an agent attached:
-
-```bash
-$ layers account
-
-  Growth account
-    Balance   0 credits
-    Plan      free
-    Trial     https://growth.layers.com/v1/checkout?item=trial&acct=…
-```
-
-A new account starts at 0 credits. The 3-day Pro trial costs $0 today, requires
-a card, and adds 100 credits. It renews to Pro, $49/month with 5,000 monthly
-credits, unless cancelled. Ultra is $199/month with 25,000 monthly credits.
-Subscribers can buy one-time packs: 500 credits for $5, 1,000 for $9, 2,000 for
-$17, or 4,000 for $29.
-
-Every priced tool accepts `get_cost: true` and returns the exact price of those
-arguments without running the call. Cache hits cost nothing, and a failed call
-refunds automatically. The server generates the current price of every tool at
-<https://growth.layers.com>.
+Prices are the server's, and the catalog carries them. Every priced tool
+accepts a cost check that returns the exact price of those arguments without
+running the call, and every result carries what it cost and what is left. This
+binary holds no price, plan, or trial fact.
 
 ## JSON output
 
-`layers growth` prints the tool's JSON envelope verbatim on stdout, which is
+`layers call` prints the tool's structured envelope verbatim on stdout, which is
 what makes it safe to pipe into an agent. On a tool error it exits 1 and writes
 the code and message to stderr, while the full error envelope still goes to
 stdout so `recovery_tool` and `nextSteps` stay readable.
@@ -169,19 +167,20 @@ Every other command takes `--json` too, and answers with one JSON object on
 stdout, so an agent reads a result instead of parsing a table:
 
 ```bash
-$ layers account --json
+$ layers setup --json
 {
-  "configured": true,
-  "balance": 0,
-  "plan": "free",
-  "trial_url": "https://growth.layers.com/v1/checkout?item=trial&acct=…",
-  "source": ".mcp.json"
+  "root": "/Users/you/your-app",
+  "endpoint": "https://mcp.layers.com/mcp",
+  "organization_id": "org_…",
+  "project_id": "prj_…",
+  "written": ["…/.layers/project.json", "…/.mcp.json", "…/.agents/skills/layers/SKILL.md"],
+  "readiness": { "status": "ready" }
 }
 ```
 
-Without the flag the output is the formatted text it has always been. With it,
-progress lines move to stderr so stdout carries the object alone, and a failure
-prints one object on stderr with a non-zero exit status:
+Without the flag the output is formatted text. With it, progress lines move to
+stderr so stdout carries the object alone, and a failure prints one object on
+stderr with a non-zero exit status:
 
 ```json
 {
@@ -197,54 +196,55 @@ does nothing there.
 
 ## Privacy
 
-The CLI sends your Layers session to the growth service to resolve your account
-and to make each call. It writes the two files above and reads nothing else.
-It does not read, upload, or scan your source. Your coding agent reads the
-codebase, locally, as it already does, and decides what to put in the research
-brief.
+Setup writes the four non-secret files above. The `.mcp.json` entry contains no
+endpoint or credential policy; those remain machine-owned. Credentials use a
+writable key derived from environment, issuer, OAuth client, user, binary, MCP
+origin, and OAuth origin, so production, staging, local development, and the
+internal `cora` binary never share one. The token identity and the repository
+binding are rechecked before each forwarded request. Setup does not upload or
+scan source code.
+
+Claude Code discovers the repository `.mcp.json` entry but keeps a new project
+server pending until the user approves it. Setup reports that state explicitly;
+start `claude` in the repository and approve the exact `layers mcp` entry once.
+Layers never edits Claude Code's private trust state.
 
 [Read the full privacy model](https://layers.com/privacy)
 
 ## All commands
 
-### Growth
+### MCP
 
-| Command                       | What it does                                                           | `--json` object                                  |
-| ----------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------ |
-| `layers setup`                | Sign in and wire the `growth_*` tools into this repository             | what it wrote, and the account those files reach |
-| `layers growth <tool> [json]` | Call a `growth_*` tool with your Layers session and print its envelope | the tool's envelope, unchanged by the flag       |
-| `layers mcp`                  | Serve the growth tools to an MCP client over stdio                     | nothing; a stdio proxy prints no result          |
-| `layers account`              | Show this repository's growth credit balance and plan                  | balance, plan, trial, and the file it read       |
+| Command                     | What it does                                                    | `--json` object                         |
+| --------------------------- | --------------------------------------------------------------- | --------------------------------------- |
+| `layers setup`              | Sign in and wire this repository to the Layers MCP              | bindings, files, clients, and readiness |
+| `layers call <tool> [json]` | Call a repository-bound Layers tool from the shell              | the tool's structured envelope          |
+| `layers mcp`                | Serve the Layers MCP to a client over credential-isolated stdio | nothing; a stdio proxy prints no result |
 
-`layers setup` flags: `--name`, `--description`, `--keywords a,b,c`, and
-`--host` (or the `LAYERS_GROWTH_HOST` environment variable) to point at a
-non-production deployment.
+`layers setup` flags: `--org` and `--project` to select the binding, `--host`
+(or `LAYERS_MCP_HOST`) to point at another deployment, `--credential-dir` to
+choose a machine-owned credential directory, `--allow-file-credentials` to
+consent to the 0600 file fallback, and `--require-keyring` to withdraw that
+consent. On Windows the credential store is pinned to the current user's
+profile-backed Layers directory; custom roots and `XDG_CONFIG_HOME` are rejected
+until ancestor ACL validation is certified.
 
 ### Auth
 
-| Command                   | What it does                                                | `--json` object                           |
-| ------------------------- | ----------------------------------------------------------- | ----------------------------------------- |
-| `layers login`            | Sign in via browser                                         | the account signed in                     |
-| `layers login --headless` | Sign in without opening a browser or listening on localhost | the account signed in                     |
-| `layers logout`           | Sign out                                                    | whether a session ended, and whose        |
-| `layers whoami`           | Show the current user, resolving the session first          | the session state and the account         |
-| `layers auth status`      | Session health, expiry, and the recent auth trail           | the same report `--json` always printed   |
-| `layers auth log`         | Timestamped refresh / adopt / quarantine / revoke history   | the events and the log path               |
-| `layers auth restore`     | Reverse a credential quarantine, no browser needed          | what was restored, and whether it expired |
+| Command                   | What it does                                                | `--json` object                             |
+| ------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
+| `layers login`            | Sign in via browser                                         | the account signed in                       |
+| `layers login --headless` | Sign in without opening a browser or listening on localhost | the account signed in                       |
+| `layers logout`           | Sign out of this repository's Layers MCP session            | which stores were cleared, and what remains |
+| `layers whoami`           | Show the current user, resolving the session first          | the session state and the account           |
+| `layers auth status`      | Session health, expiry, and the recent auth trail           | the same report `--json` always printed     |
+| `layers auth log`         | Timestamped refresh / adopt / quarantine / revoke history   | the events and the log path                 |
+| `layers auth restore`     | Reverse a credential quarantine, no browser needed          | what was restored, and whether it expired   |
 
-### Keys
-
-`layers setup` and `layers growth` never need a key. These are for clients you
-wire by hand.
-
-| Command                      | What it does                                 | `--json` object                |
-| ---------------------------- | -------------------------------------------- | ------------------------------ |
-| `layers keys create`         | Mint a growth API key and print it once      | the minted key, printed once   |
-| `layers keys list`           | List growth API keys for your Layers account | the keys, each with its status |
-| `layers keys revoke <keyId>` | Revoke a growth API key                      | the key revoked                |
-
-`layers keys create` flags: `--project` to bind the key to a platform project,
-`--name` to pick the matching project by app name.
+`layers logout` clears the credential this repository's Layers MCP uses and
+names it. When the same account is still signed in to the shared `layers login`
+session on this machine, the report says so; `layers logout --all` clears that
+one too. A malformed or foreign `.mcp.json` never blocks a logout.
 
 ### CLI
 
@@ -285,33 +285,34 @@ browser and listens for the OAuth callback on localhost.
 open the printed URL on any device, then paste the localhost callback URL (or
 its `code` value) into the CLI.
 
-**Agent can't see the `growth_*` tools?** Restart it, or run `/mcp`. MCP servers
-are read at startup, so a `.mcp.json` written mid-session is not picked up until
-then. `layers growth <tool>` works immediately in the meantime.
+**Agent can't see the Layers tools?** Restart it, or run `/mcp`. MCP servers are
+read at startup, so a `.mcp.json` written mid-session is not picked up until
+then. `layers call <tool>` works immediately in the meantime.
 
 **`layers` is not on your PATH?** An MCP client cannot spawn `layers mcp` until
 it is. Install with `npm install -g @layers/cli`, or put the binary's directory
 on PATH.
 
-**`No growth MCP configured here`?** You are not in the repository `layers
-setup` ran in. The files land at the repository root, so run `layers account`
-from anywhere inside that repo.
+**`mcpServers.growth names the retired growth MCP`?** This repository was wired
+to the retired growth service. Run `layers setup`; it removes that entry when it
+is exactly the one an older `layers setup` wrote, and tells you what to fix when
+somebody edited it.
 
-**A tool answered `NO_KEY`?** Nobody is signed in. Run `layers login`.
-
-**A tool answered `NO_ACCOUNT`?** You are signed in and the Layers account is
-not ready for growth. The message names the fix; signing in again is not it.
+**`WORKSPACE_NOT_BOUND`?** You are not in a repository `layers setup` ran in.
+The binding lands at the repository root, so run `layers setup` from there.
 
 **Session problems?** `layers auth status` reports the state, the expiry, and
 what repairs it. `layers auth restore` reverses a quarantine without a browser.
 
-**Keychain errors on Linux?** Install `gnome-keyring` or `kwallet`. Falls back
-to encrypted file storage at `~/.config/layers/`.
+**Keychain errors on Linux?** Install `gnome-keyring` or `kwallet`. Setup blocks
+by default; `--allow-file-credentials` explicitly permits the mode-0600 machine
+record under `~/.config/layers/`. It is not encrypted and is never stored in the
+repository.
 
 ## Links
 
 - [Layers](https://layers.com): the main site
-- [Growth docs](https://layers.com/docs/growth): install, prices, and error recovery
+- [Docs](https://layers.com/docs): install, catalog, and error recovery
 - [Dashboard](https://app.layers.com): the web dashboard
 - [Changelog](https://github.com/layers/cli/releases): release notes
 
