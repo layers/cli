@@ -371,6 +371,14 @@ The binding lands at the repository root, so run `layers setup` from there.
 
 **Session problems?** `layers auth status` reports the state, the expiry, and
 what repairs it. `layers auth restore` reverses a quarantine without a browser.
+`layers login` repairs the session every command reads, this repository's MCP
+session included, so `whoami`, `org` and `call` agree after it.
+
+**`layers mcp` says the endpoint it was set up for is unreachable?** Setup
+records the endpoint it resolved in the machine's config, and `.mcp.json` never
+names one, so a repository cannot decide where your session goes. If that record
+is missing or stale, rerun `layers setup` (with `--host` if you use a
+non-default deployment) in the repository to write it again.
 
 **Keychain errors on Linux?** Install `gnome-keyring` or `kwallet`. Setup blocks
 by default; `--allow-file-credentials` explicitly permits the mode-0600 machine
