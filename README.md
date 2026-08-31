@@ -6,6 +6,22 @@ coding agent can call Layers growth, content, paid-media and managed
 distribution tools by name. One command does the whole setup, and no credential
 is written into the repository.
 
+## Get started
+
+```text
+Set up Layers Growth for me so you can plan, render and deliver content for this product from here.
+1. Install the CLI: run `npm install -g @layers/cli`.
+2. Set it up: run `layers setup` from this repository. It opens my browser once for sign-in and waits for me; it writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in my OS credential store, so nothing secret lands in the repo.
+3. Read the skill at `.agents/skills/layers/SKILL.md`, then tell me what to post first.
+Let me know when it is ready.
+```
+
+Paste that into Claude Code, Codex, Cursor, or any coding agent working in your
+repository: the agent runs both commands, and the browser sign-in is the only
+step that needs a person.
+
+This is what the agent sees when setup finishes:
+
 ```bash
 $ cd your-app
 $ layers setup
@@ -28,8 +44,8 @@ $ layers setup
     Readiness      ready
 ```
 
-Then ask your agent to grow the app. It reads the pinned skill pointer, loads
-the server-owned skills for the job at hand, and calls the tools.
+From there the agent reads the pinned skill pointer, loads the server-owned
+skills for the job at hand, and calls the tools.
 
 ## Install
 
@@ -71,7 +87,9 @@ scoop install layers
 
 **Direct download:** [GitHub Releases](https://github.com/layers/cli/releases)
 
-## Quick start
+## Manual setup
+
+For people who prefer a shell:
 
 ```bash
 # 1. Sign in and wire up this repository (opens a browser once)
