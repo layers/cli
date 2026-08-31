@@ -269,8 +269,7 @@ Layers never edits Claude Code's private trust state.
 | `layers mcp`                | Serve the Layers MCP to a client over credential-isolated stdio | nothing; a stdio proxy prints no result |
 
 `layers setup` flags: `--org` and `--project` to select the binding, `--new` to
-create the first workspace for an account that has no project, `--accept-brief`
-to send the product brief without the terminal confirmation, `--host` (or
+create the first workspace for an account that has no project, `--host` (or
 `LAYERS_MCP_HOST`) to point at another deployment, `--credential-dir` to choose
 a machine-owned credential directory, `--allow-file-credentials` to consent to
 the 0600 file fallback, and `--require-keyring` to withdraw that consent. On
@@ -289,16 +288,17 @@ It reads the product name and one-line description this repository can answer
 for itself, from a package manifest, the README title, and the README's first
 paragraph, and shows them. No file, path, or source line leaves the machine.
 
-At a terminal it then asks:
+It then sends that brief and says so:
 
 ```
-  Send this brief to Layers? [Y/n/e]
+  Sending this brief to Layers.
+  Layers confirms the workspace with the account owner in the browser.
 ```
 
-Enter sends it, `e` edits the name and the description first, `n` sends
-nothing. In a shell with no terminal, which is where a coding agent runs, setup
-prints the brief and continues; Layers confirms the workspace with the account
-owner in the browser. `--accept-brief` skips the question at a terminal too.
+There is no terminal question, so the run behaves the same in a shell with no
+tty, which is where a coding agent runs. A repository whose README describes
+nothing gets a refusal naming the repair instead of an invented description.
+`--accept-brief` is still accepted and does nothing.
 
 ### Auth
 
