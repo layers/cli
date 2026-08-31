@@ -156,6 +156,35 @@ accepts a cost check that returns the exact price of those arguments without
 running the call, and every result carries what it cost and what is left. This
 binary holds no price, plan, or trial fact.
 
+A workspace `layers setup` just created has no subscription, so charged calls
+are refused until someone chooses a plan. Setup reads `layers://account` after
+it binds, and when that workspace is not spend-entitled it prints the plan page
+alongside the connect-account step:
+
+```
+Next steps for your coding agent
+  Choose a plan: https://app.layers.com/?settings=plan
+```
+
+The line names the page and nothing else. What a plan costs, what it includes,
+and how it starts are on that page and in `layers://account`.
+
+`layers setup --json` carries the same step in `human_actions`:
+
+```json
+{
+  "human_actions": [
+    {
+      "kind": "choose_plan",
+      "url": "https://app.layers.com/?settings=plan",
+      "message": "Choose a plan: https://app.layers.com/?settings=plan"
+    }
+  ]
+}
+```
+
+The key is always present; it is an empty array once the workspace can spend.
+
 ## JSON output
 
 `layers call` prints the tool's structured envelope verbatim on stdout, which is
@@ -221,13 +250,37 @@ Layers never edits Claude Code's private trust state.
 | `layers call <tool> [json]` | Call a repository-bound Layers tool from the shell              | the tool's structured envelope          |
 | `layers mcp`                | Serve the Layers MCP to a client over credential-isolated stdio | nothing; a stdio proxy prints no result |
 
-`layers setup` flags: `--org` and `--project` to select the binding, `--host`
-(or `LAYERS_MCP_HOST`) to point at another deployment, `--credential-dir` to
-choose a machine-owned credential directory, `--allow-file-credentials` to
-consent to the 0600 file fallback, and `--require-keyring` to withdraw that
-consent. On Windows the credential store is pinned to the current user's
-profile-backed Layers directory; custom roots and `XDG_CONFIG_HOME` are rejected
-until ancestor ACL validation is certified.
+`layers setup` flags: `--org` and `--project` to select the binding, `--new` to
+create the first workspace for an account that has no project, `--accept-brief`
+to send the product brief without the terminal confirmation, `--host` (or
+`LAYERS_MCP_HOST`) to point at another deployment, `--credential-dir` to choose
+a machine-owned credential directory, `--allow-file-credentials` to consent to
+the 0600 file fallback, and `--require-keyring` to withdraw that consent. On
+Windows the credential store is pinned to the current user's profile-backed
+Layers directory; custom roots and `XDG_CONFIG_HOME` are rejected until ancestor
+ACL validation is certified.
+
+Ids are the public `org_…` and `prj_…` selectors everywhere they are printed,
+including `layers org list --json`. Both that form and the bare uuid are
+accepted wherever an id is an input.
+
+### Creating the first workspace
+
+An account with no project has nothing to select, so `layers setup` creates one.
+It reads the product name and one-line description this repository can answer
+for itself, from a package manifest, the README title, and the README's first
+paragraph, and shows them. No file, path, or source line leaves the machine.
+
+At a terminal it then asks:
+
+```
+  Send this brief to Layers? [Y/n/e]
+```
+
+Enter sends it, `e` edits the name and the description first, `n` sends
+nothing. In a shell with no terminal, which is where a coding agent runs, setup
+prints the brief and continues; Layers confirms the workspace with the account
+owner in the browser. `--accept-brief` skips the question at a terminal too.
 
 ### Auth
 
@@ -245,6 +298,12 @@ until ancestor ACL validation is certified.
 names it. When the same account is still signed in to the shared `layers login`
 session on this machine, the report says so; `layers logout --all` clears that
 one too. A malformed or foreign `.mcp.json` never blocks a logout.
+
+Every session command takes `--credential-dir`, `layers logout` included. That
+directory is the store: deleting it ends the session for every command, and
+nothing falls back to another one. `--all` clears the plain store of the
+directory it was given, so a scoped run's follow-up carries the flag too:
+`layers logout --all --credential-dir <dir>`.
 
 ### CLI
 
@@ -281,9 +340,18 @@ timeout, and the last attempt is stamped at
 **Can't sign in?** Make sure ports 54321-54323 aren't in use. The CLI opens your
 browser and listens for the OAuth callback on localhost.
 
+**"the sign-in link expired after 5 minutes"?** The CLI waits five minutes for
+the browser to come back. A first-time signup inside that window is email, full
+name, the code mail, the code, and an Authorize click. Run `layers login` again
+and it reopens with a fresh link.
+
 **Signing in over SSH or on a headless machine?** Run `layers login --headless`,
 open the printed URL on any device, then paste the localhost callback URL (or
 its `code` value) into the CLI.
+
+**`BOOTSTRAP_NOT_AVAILABLE`?** The Layers edge is not offering workspace
+creation at that moment. Nothing local repairs it: try again later, or send
+support@layers.com the request id the message carries.
 
 **Agent can't see the Layers tools?** Restart it, or run `/mcp`. MCP servers are
 read at startup, so a `.mcp.json` written mid-session is not picked up until
