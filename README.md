@@ -1,7 +1,7 @@
 
 # Layers CLI
 
-Layers CLI signs you in and binds this repository to the Layers MCP, so your
+Layers CLI signs you in and binds this repository to the Layers Growth MCP, so your
 coding agent can call Layers growth, content, paid-media and managed
 distribution tools by name. One command does the whole setup, and no credential
 is written into the repository.
@@ -26,7 +26,7 @@ This is what the agent sees when setup finishes:
 $ cd your-app
 $ layers setup
 
-  ✓ Layers MCP is configured and ready for this repository.
+  ✓ Layers Growth MCP is configured and ready for this repository.
 
     Organization  org_…
     Project       prj_…
@@ -155,7 +155,7 @@ host named in `LAYERS_MCP_HOST` are accepted.
 `layers login` stores your session in the operating system keyring: Keychain on
 macOS, Credential Manager on Windows, `gnome-keyring` or `kwallet` on Linux.
 The credential subsystem also maintains its mode-0600 machine record under the
-global Layers config directory for refresh durability. The Layers MCP will not
+global Layers config directory for refresh durability. The Layers Growth MCP will not
 accept that record without the matching OS-keyring session unless the operator
 explicitly records `--allow-file-credentials` in the 0600 machine config.
 
@@ -262,11 +262,11 @@ Layers never edits Claude Code's private trust state.
 
 ### MCP
 
-| Command                     | What it does                                                    | `--json` object                         |
-| --------------------------- | --------------------------------------------------------------- | --------------------------------------- |
-| `layers setup`              | Sign in and wire this repository to the Layers MCP              | bindings, files, clients, and readiness |
-| `layers call <tool> [json]` | Call a repository-bound Layers tool from the shell              | the tool's structured envelope          |
-| `layers mcp`                | Serve the Layers MCP to a client over credential-isolated stdio | nothing; a stdio proxy prints no result |
+| Command                     | What it does                                                           | `--json` object                         |
+| --------------------------- | ---------------------------------------------------------------------- | --------------------------------------- |
+| `layers setup`              | Sign in and wire this repository to the Layers Growth MCP              | bindings, files, clients, and readiness |
+| `layers call <tool> [json]` | Call a repository-bound Layers tool from the shell                     | the tool's structured envelope          |
+| `layers mcp`                | Serve the Layers Growth MCP to a client over credential-isolated stdio | nothing; a stdio proxy prints no result |
 
 `layers setup` flags: `--org` and `--project` to select the binding, `--new` to
 create the first workspace for an account that has no project, `--host` (or
@@ -306,13 +306,13 @@ nothing gets a refusal naming the repair instead of an invented description.
 | ------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
 | `layers login`            | Sign in via browser                                         | the account signed in                       |
 | `layers login --headless` | Sign in without opening a browser or listening on localhost | the account signed in                       |
-| `layers logout`           | Sign out of this repository's Layers MCP session            | which stores were cleared, and what remains |
+| `layers logout`           | Sign out of this repository's Layers Growth MCP session     | which stores were cleared, and what remains |
 | `layers whoami`           | Show the current user, resolving the session first          | the session state and the account           |
 | `layers auth status`      | Session health, expiry, and the recent auth trail           | the same report `--json` always printed     |
 | `layers auth log`         | Timestamped refresh / adopt / quarantine / revoke history   | the events and the log path                 |
 | `layers auth restore`     | Reverse a credential quarantine, no browser needed          | what was restored, and whether it expired   |
 
-`layers logout` clears the credential this repository's Layers MCP uses and
+`layers logout` clears the credential this repository's Layers Growth MCP uses and
 names it. When the same account is still signed in to the shared `layers login`
 session on this machine, the report says so; `layers logout --all` clears that
 one too. A malformed or foreign `.mcp.json` never blocks a logout.
