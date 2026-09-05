@@ -217,6 +217,7 @@ stdout, so an agent reads a result instead of parsing a table:
 $ layers setup --json
 {
   "root": "/Users/you/your-app",
+  "status": "ready",
   "endpoint": "https://mcp.layers.com/mcp",
   "organization_id": "org_…",
   "project_id": "prj_…",
@@ -224,6 +225,36 @@ $ layers setup --json
   "readiness": { "status": "ready" }
 }
 ```
+
+`layers setup --new` has a second result that also exits zero. Onboarding can
+stop on one fact no source can provide — most often the product's public URL —
+and that is a question rather than a failure. Branch on `status`; a `ready`
+object is the one above, and this one is the stop:
+
+```bash
+$ layers setup --new --org org_… --json
+{
+  "root": "/Users/you/your-app",
+  "status": "needs_answer",
+  "endpoint": "https://mcp.layers.com/mcp",
+  "rerun": "layers setup --new --org org_… --url <their URL>",
+  "rerun_no_public_url": "layers setup --new --org org_… --no-public-url",
+  "workspace": {
+    "state": "needs_input",
+    "question": {
+      "question_id": "public_url.…",
+      "ask": "Is one of these the public URL Layers can use to onboard Widget?",
+      "options": [{ "option_id": "url_1", "label": "https://…" }]
+    }
+  }
+}
+```
+
+Nothing was written: no binding, no `.mcp.json` entry, no skill. Put
+`workspace.question.ask` and its option labels to the person you are working
+for, then run one of the two lines. `rerun` carries the literal `<their URL>`
+placeholder, so replace it with the address they give before running it;
+`rerun_no_public_url` is a command as it stands.
 
 Without the flag the output is formatted text. With it, progress lines move to
 stderr so stdout carries the object alone, and a failure prints one object on
