@@ -419,9 +419,13 @@ somebody edited it.
 The binding lands at the repository root, so run `layers setup` from there.
 
 **Session problems?** `layers auth status` reports the state, the expiry, and
-what repairs it. `layers auth restore` reverses a quarantine without a browser.
-`layers login` repairs the session every command reads, this repository's MCP
-session included, so `whoami`, `org` and `call` agree after it.
+what repairs it, and its `Store:` line names the credential directory it read
+(`store.kind` and `store.directory` under `--json`; `whoami` carries the same
+object). `auth status`, `auth log` and `auth restore` read the store `whoami`,
+`org` and `call` read, so the two reports can be compared by path. `layers auth
+restore` reverses a quarantine without a browser. `layers login` repairs the
+session every command reads, this repository's MCP session included, so
+`whoami`, `org` and `call` agree after it.
 
 **`layers mcp` says the endpoint it was set up for is unreachable?** Setup
 records the endpoint it resolved in the machine's config, and `.mcp.json` never
