@@ -11,12 +11,12 @@ is written into the repository.
 ```text
 Set up Layers Growth for me so you can plan, render and deliver content for this product from here.
 1. Install the CLI: run `npm install -g @layers/cli`.
-2. Set it up: run `layers setup` from this repository. It opens my browser once for sign-in and waits for me; it writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in my OS credential store, so nothing secret lands in the repo.
+2. Set it up: run `layers setup` from this repository. Send me the sign-in link it prints and wait for me; it also opens a browser when available. It writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in my OS credential store, so nothing secret lands in the repo.
 3. Read the skill at `.agents/skills/layers/SKILL.md`, then tell me what to post first.
 Let me know when it is ready.
 ```
 
-Paste that into Claude Code, Codex, Cursor, or any coding agent working in your
+Give those instructions to Claude Code, Codex, Cursor, or any coding agent working in your
 repository: the agent runs both commands, and the browser sign-in is the only
 step that needs a person.
 
@@ -92,7 +92,7 @@ scoop install layers
 For people who prefer a shell:
 
 ```bash
-# 1. Sign in and wire up this repository (opens a browser once)
+# 1. Sign in and wire up this repository (prints a link and opens a browser)
 cd your-app
 layers setup
 
@@ -269,6 +269,21 @@ stderr with a non-zero exit status:
 }
 ```
 
+Before waiting for sign-in, both `login --json` and `setup --json` print the
+relay line and a `human_step` event on stderr:
+
+```text
+Send this to the person: https://growth.layers.com/link/BCDF-GHJK (code BCDF-GHJK)
+{"event":"human_step","url":"https://growth.layers.com/link/BCDF-GHJK","code":"BCDF-GHJK"}
+```
+
+The event contains the public URL and code. The pending sign-in proof stays in
+`pending-login.json` under the Layers config directory with mode 0600. A
+restarted command resumes that link until its expiry; a completed or refused
+sign-in removes the file. `LAYERS_AGENT_LABEL` sets the requesting agent's
+display label, with `Layers CLI` as the default. Link creation, polling and
+session refresh use `https://api.layers.com`, or `LAYERS_API_URL` when set.
+
 `layers mcp` is a stdio proxy that prints no result of its own, so the flag
 does nothing there.
 
@@ -333,15 +348,15 @@ nothing gets a refusal naming the repair instead of an invented description.
 
 ### Auth
 
-| Command                   | What it does                                                | `--json` object                             |
-| ------------------------- | ----------------------------------------------------------- | ------------------------------------------- |
-| `layers login`            | Sign in via browser                                         | the account signed in                       |
-| `layers login --headless` | Sign in without opening a browser or listening on localhost | the account signed in                       |
-| `layers logout`           | Sign out of this repository's Layers Growth MCP session     | which stores were cleared, and what remains |
-| `layers whoami`           | Show the current user, resolving the session first          | the session state and the account           |
-| `layers auth status`      | Session health, expiry, and the recent auth trail           | the same report `--json` always printed     |
-| `layers auth log`         | Timestamped refresh / adopt / quarantine / revoke history   | the events and the log path                 |
-| `layers auth restore`     | Reverse a credential quarantine, no browser needed          | what was restored, and whether it expired   |
+| Command                   | What it does                                              | `--json` object                             |
+| ------------------------- | --------------------------------------------------------- | ------------------------------------------- |
+| `layers login`            | Sign in by link or local browser                          | the account signed in                       |
+| `layers login --headless` | Sign in by link without a browser or localhost listener   | the account signed in                       |
+| `layers logout`           | Sign out of this repository's Layers Growth MCP session   | which stores were cleared, and what remains |
+| `layers whoami`           | Show the current user, resolving the session first        | the session state and the account           |
+| `layers auth status`      | Session health, expiry, and the recent auth trail         | the same report `--json` always printed     |
+| `layers auth log`         | Timestamped refresh / adopt / quarantine / revoke history | the events and the log path                 |
+| `layers auth restore`     | Reverse a credential quarantine, no browser needed        | what was restored, and whether it expired   |
 
 `layers logout` clears the credential this repository's Layers Growth MCP uses and
 names it. When the same account is still signed in to the shared `layers login`
@@ -386,17 +401,18 @@ timeout, and the last attempt is stamped at
 
 ## Troubleshooting
 
-**Can't sign in?** Make sure ports 54321-54323 aren't in use. The CLI opens your
-browser and listens for the OAuth callback on localhost.
+**Can't sign in?** Open the printed sign-in link on any device and choose Allow.
+The CLI also opens a local browser and listens on ports 54321-54323; whichever
+sign-in finishes first completes the login. If those ports are unavailable,
+the link still works.
 
-**"the sign-in link expired after 5 minutes"?** The CLI waits five minutes for
-the browser to come back. A first-time signup inside that window is email, full
-name, the code mail, the code, and an Authorize click. Run `layers login` again
-and it reopens with a fresh link.
+**"the sign-in link expired"?** The CLI waits until the link's server-issued
+expiry, including for a local browser sign-in. Run `layers login` again for a
+fresh link. Restarting before expiry keeps the same link.
 
 **Signing in over SSH or on a headless machine?** Run `layers login --headless`,
-open the printed URL on any device, then paste the localhost callback URL (or
-its `code` value) into the CLI.
+send the printed link to the person you work for, and wait for them to choose
+Allow. Nothing needs to be entered in the terminal.
 
 **`BOOTSTRAP_NOT_AVAILABLE`?** The Layers edge is not offering workspace
 creation at that moment. Nothing local repairs it: try again later, or send
