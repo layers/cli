@@ -12,18 +12,23 @@ is written into the repository.
 Set up Layers for this product: onboard it, install Layers measurement, then connect Meta and launch ads.
 1. Install the CLI: run `npm install -g @layers/cli`.
 2. Check that the README opens with a plain sentence saying what this product is, and write one if it does not. Setup sends that single line as the product brief, and it stops with exit code 1 when it cannot find one.
-3. Set it up: run `layers setup` from this repository. It prints one line, "Send this to the person: <link> (code <code>)". Send me that link and code; I tap the link, check the code matches, and tap Allow. It also opens a browser on this machine when there is one, and either way finishes the sign-in. The link works for 15 minutes, and running `layers setup` again after a restart resumes the same link. It writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in the OS credential store, so nothing secret lands in the repo. On a machine with no OS credential store, such as a Linux cloud computer, run `layers setup --allow-file-credentials` instead, which keeps the session in a private 0600 file. It may ask for the product's public URL, which is its website, its App Store page, or its Google Play page; pass that question to me. Setup also onboards the product: Layers saves the README line and the public URL as this product's brief.
-4. Read the skill at `.agents/skills/layers/SKILL.md`.
-5. Install Layers measurement: call install_growth_measurement with action spec. It returns the SDK dependency, the app id and the init snippet for this app. Add them to the app, run the app once on a simulator or a device, then call install_growth_measurement with action verify until it answers reporting.
-6. Connect Meta and launch: read layers://workspace. The meta-ads row of paidReadiness.providers carries a signed connect link. Send me that link; I open it and choose the ad account. When that row reads configured, launch the first Meta campaign for this product.
+3. Set it up: run `layers setup` from this repository. It prints one line, "Send this to the person: <link> (code <code>)". Send me that link and code; I tap the link, check the code matches, and tap Allow. It also opens a browser on this machine when there is one, and either way finishes the sign-in. The link works for 15 minutes, and running `layers setup` again after a restart resumes the same link. It writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in the OS credential store, so nothing secret lands in the repo. On a machine with no OS credential store, such as a Linux cloud computer, run `layers setup --allow-file-credentials` instead, which keeps the session in a private 0600 file. If it asks for the product's public URL, which is its website, its App Store page, or its Google Play page, pass that question to me. Setup also onboards the product: Layers saves the README line and the public URL as this product's brief.
+4. Check the organization: when setup creates the project, its summary names the organization the project is in and says how to put the project in another one. Send me that organization line. If I name another organization, follow those instructions.
+5. Read the skill at `.agents/skills/layers/SKILL.md`. If this session cannot load the Layers MCP server, as in a headless run, call a tool with `layers call <tool> '<json>'` and read a resource with `layers call layers://<resource>`; both reach the same tools and resources.
+6. Install Layers measurement: call install_growth_measurement with action spec. For an Expo, React Native or Flutter app, send platforms with that framework, such as ["expo"]; the response lists the platforms the spec covers. When the product has a website to promote, send webDomain set to its host name, such as example.com. It returns the SDK dependency, the app id and the init snippet for this app. Add them to the app, run the app once on a simulator, a device or in a browser, then call install_growth_measurement with action verify until it answers reporting.
+7. Set the daily cap before any launch: ask me "What is the most you want to spend on ads per day, in US dollars?" and set my answer with set_spend_cap. The cap is a 7-day average, so one day over it is fine.
+8. Connect Meta: read layers://workspace. The meta-ads row of paidReadiness.providers carries a signed connect link. Send me that link; I open it and choose the ad account, the Facebook Page the ads run as and, for an app with a store listing, its Meta app. Every Meta ad runs as a Facebook Page. If I have none, the page links to where I create one; when I tell you the Page is ready, send me a new connect link. Wait until that row reads configured.
+9. Make the ads: write the primary text and headline and make the images for each market, in that market's language and sized for Meta placements. Save each image inside this repository: launch_ads takes it as media with source local_file and the file's path, and the layers CLI uploads it. An image already at an https address goes as source image_url with that url. Show me the copy and the images before you launch.
+10. Launch: call launch_ads with action launch, a dailyBudget within the cap in the ad account's currency, currency, markets and the creatives. An app with a live App Store or Google Play listing gets an App Promotion campaign for installs. A website product, such as a web app, a SaaS, a store or an info product, gets a Sales campaign whose ads link to the website and optimize Purchase on the site's Meta Pixel. An app with no store listing yet launches only through its website, or waits for the listing. launch_ads returns each blocker with its fix; do the fix and call it again. While Meta reviews the ads, the launch answers status running; call launch_ads with action status and its jobId until it finishes.
 Let me know when it is ready.
 ```
 
 Give those instructions to Claude Code, Codex, Cursor, or any coding agent working in your
 repository: the agent runs the commands and the tool calls. A person taps the
-sign-in link and opens the Meta connect link.
+sign-in link, answers the daily ad cap question, and opens the Meta connect link.
 
-This is what the agent sees when setup finishes:
+This is what the agent sees when a setup run that creates the project finishes
+(CLI 2.1.21). The two lines under Organization appear on that run only:
 
 ```bash
 $ cd your-app
@@ -31,7 +36,9 @@ $ layers setup
 
   ✓ Layers Growth MCP is configured and ready for this repository.
 
-    Organization  org_…
+    Organization  Acme (org_…)
+                  Setup put this repository's project here because it is the only organization this account belongs to.
+                  For another organization: Delete /…/your-app/.layers/project.json, then run `layers setup --new --org <org-id>`. `layers org list` shows the organization ids, and `layers org use <id-or-name>` makes one this machine's default.
     Project       prj_…
     Endpoint      https://mcp.layers.com/mcp
 
