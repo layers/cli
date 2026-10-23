@@ -9,16 +9,19 @@ is written into the repository.
 ## Get started
 
 ```text
-Set up Layers Growth for me so you can plan, render and deliver content for this product from here.
+Set up Layers for this product: onboard it, install Layers measurement, then connect Meta and launch ads.
 1. Install the CLI: run `npm install -g @layers/cli`.
-2. Set it up: run `layers setup` from this repository. Send me the sign-in link it prints and wait for me; it also opens a browser when available. It writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in my OS credential store, so nothing secret lands in the repo.
-3. Read the skill at `.agents/skills/layers/SKILL.md`, then tell me what to post first.
+2. Check that the README opens with a plain sentence saying what this product is, and write one if it does not. Setup sends that single line as the product brief, and it stops with exit code 1 when it cannot find one.
+3. Set it up: run `layers setup` from this repository. It prints one line, "Send this to the person: <link> (code <code>)". Send me that link and code; I tap the link, check the code matches, and tap Allow. It also opens a browser on this machine when there is one, and either way finishes the sign-in. The link works for 15 minutes, and running `layers setup` again after a restart resumes the same link. It writes the `.mcp.json` entry and the Layers skill into the repo and stores the session in the OS credential store, so nothing secret lands in the repo. On a machine with no OS credential store, such as a Linux cloud computer, run `layers setup --allow-file-credentials` instead, which keeps the session in a private 0600 file. It may ask for the product's public URL, which is its website, its App Store page, or its Google Play page; pass that question to me. Setup also onboards the product: Layers saves the README line and the public URL as this product's brief.
+4. Read the skill at `.agents/skills/layers/SKILL.md`.
+5. Install Layers measurement: call install_growth_measurement with action spec. It returns the SDK dependency, the app id and the init snippet for this app. Add them to the app, run the app once on a simulator or a device, then call install_growth_measurement with action verify until it answers reporting.
+6. Connect Meta and launch: read layers://workspace. The meta-ads row of paidReadiness.providers carries a signed connect link. Send me that link; I open it and choose the ad account. When that row reads configured, launch the first Meta campaign for this product.
 Let me know when it is ready.
 ```
 
 Give those instructions to Claude Code, Codex, Cursor, or any coding agent working in your
-repository: the agent runs both commands, and the browser sign-in is the only
-step that needs a person.
+repository: the agent runs the commands and the tool calls. A person taps the
+sign-in link and opens the Meta connect link.
 
 This is what the agent sees when setup finishes:
 
@@ -96,8 +99,8 @@ For people who prefer a shell:
 cd your-app
 layers setup
 
-# 2. Call a tool right now, in this same shell
-layers call find_growth_opportunities
+# 2. Call a tool right now, in this same shell: the Layers SDK install spec
+layers call install_growth_measurement '{"action":"spec"}'
 
 # 3. Restart your coding agent, or run /mcp, so it loads the tools natively
 ```
